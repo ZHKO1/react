@@ -82,6 +82,8 @@ function parseRequestedNames(names, toCase) {
   return result;
 }
 
+// ! @ZHKO1 做标识跳过一些不必要的build
+const isZHKO1Debugger = (argv.zhko1 || '');
 const requestedBundleTypes = argv.type
   ? parseRequestedNames([argv.type], 'uppercase')
   : [];
@@ -367,7 +369,9 @@ function getPlugins(
     },
     // Turn __DEV__ and process.env checks into constants.
     replace({
-      __DEV__: isProduction ? 'false' : 'true',
+      // ! @ZHKO1
+      //__DEV__: isProduction ? 'false' : 'true',
+      __DEV__: 'false',
       __PROFILE__: isProfiling || !isProduction ? 'true' : 'false',
       __UMD__: isUMDBundle ? 'true' : 'false',
       'process.env.NODE_ENV': isProduction ? "'production'" : "'development'",
@@ -656,6 +660,12 @@ async function buildEverything() {
   let bundles = [];
   // eslint-disable-next-line no-for-of-loops/no-for-of-loops
   for (const bundle of Bundles.bundles) {
+    // ! @ZHOK1
+    if (isZHKO1Debugger) {
+      bundles.push(
+        [bundle, UMD_DEV]);
+      continue;
+    }
     bundles.push(
       [bundle, UMD_DEV],
       [bundle, UMD_PROD],

@@ -98,6 +98,7 @@
   },
   "scripts": {
     "build": "node ./scripts/rollup/build.js",
+    "zhko1-build": "yarn build react,dom --type=UMD --zhko1",
     "linc": "node ./scripts/tasks/linc.js",
     "lint": "node ./scripts/tasks/eslint.js",
     "lint-build": "node ./scripts/rollup/validate/index.js",
