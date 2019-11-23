@@ -447,7 +447,9 @@ function shouldSkipBundle(bundle, bundleType) {
       // `react-dom` but not `react-dom/server`. Everything else is fuzzy
       // search.
       requestedName =>
-        (bundle.entry + '/index.js').indexOf(requestedName) === -1
+        // ! @ZHKO1
+        //(bundle.entry + '/index.js').indexOf(requestedName) === -1
+        bundle.entry !== requestedName
     );
     if (isAskingForDifferentNames) {
       return true;
