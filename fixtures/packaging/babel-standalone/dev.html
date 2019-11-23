@@ -6,12 +6,18 @@
     <script src="babel.js"></script>
     <div id="container"></div>
     <script type="text/babel">
-      var DAMN = (<div id="FUCKYOU" key="damn">Hello World!</div>);
+      var DAMN = (<div id="FUCKYOU">
+        <div key="damn1">DAMN1</div>
+        <div key="damn2">DAMN2</div>
+        <div>DAMN</div>
+      </div>);
       console.log(DAMN);
+      /*
       ReactDOM.render(
         <h1>Hello World!</h1>,
         document.getElementById('container')
       );
+      */
     </script>
   </body>
 </html>
