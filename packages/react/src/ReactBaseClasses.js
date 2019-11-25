@@ -56,6 +56,7 @@ Component.prototype.isReactComponent = {};
  * @protected
  */
 Component.prototype.setState = function(partialState, callback) {
+  // ! @ZHKO1 初步看下来invariant函数跟scripts/error-codes/transform-error-messages.js有关，屌，还能这样
   invariant(
     typeof partialState === 'object' ||
       typeof partialState === 'function' ||
