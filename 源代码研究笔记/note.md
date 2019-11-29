@@ -1,6 +1,9 @@
 **ReactDOM**
 
-首先我们先理 ReactDOM.render 的大致思路
+React.Children.map
+对象池的概念，对于性能的提升。
+
+ReactDOM.render 的大致思路
 function render(element, container)
 跳转 -> function legacyRenderSubtreeIntoContainer(container)
     初始挂载    原生容器root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container,forceHydrate)
