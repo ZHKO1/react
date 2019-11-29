@@ -49,4 +49,5 @@ sibling 兄弟节点
 
 参考资料:
 1. https://github.com/jsonz1993/react-source-learn/issues/
-1. https://github.com/KieSun/Dream/issues/
+2. https://github.com/KieSun/Dream/issues/
+3. https://didiheng.com/react/2019-05-12.html（待读）
