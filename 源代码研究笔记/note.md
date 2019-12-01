@@ -75,6 +75,9 @@ unbatchedUpdates
 
 
 
+scheduleUpdateOnFiber
+  checkForNestedUpdates 检查内嵌循环
+  const root = markUpdateTimeFromFiberToRoot(fiber, expirationTime);
 
 
 
@@ -83,7 +86,7 @@ unbatchedUpdates
 参考资料:
 1. https://github.com/jsonz1993/react-source-learn/issues/
 2. https://github.com/KieSun/Dream/issues/
-3. https://didiheng.com/react/2019-05-12.html（待读）
+3. https://didiheng.com/react/2019-05-12.html（作者水准比较菜，真的仅供参考）
 4. https://segmentfault.com/a/1190000020736992
 5. https://github.com/AttackXiaoJinJin/reactExplain/blob/master/react16.8.6/packages/react-reconciler/src/ReactFiberExpirationTime.js
 6. https://segmentfault.com/a/1190000020248630
