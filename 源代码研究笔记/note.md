@@ -47,7 +47,45 @@ child 子节点
 sibling 兄弟节点
 这里需要注意 effectTag属性 和 alternate属性，看看后续会不会用到
 
+
+unbatchedUpdates
+  executionContext 去除 BatchedContext位，声明 LegacyUnbatchedContext位
+  回调 -> updateContainer()
+    requestCurrentTimeForUpdate 获取目前的时间
+    computeExpirationForFiber(currentTime, current, suspenseConfig)
+      getCurrentPriorityLevel() 来确认 优先级
+        Scheduler_getCurrentPriorityLevel()
+      根据不同优先级来采用不同计算方式
+      case ImmediatePriority:
+        expirationTime = Sync;
+        break;
+      case UserBlockingPriority:
+        expirationTime = computeInteractiveExpiration(currentTime);
+        break;
+      case NormalPriority:
+      case LowPriority:
+        expirationTime = computeAsyncExpiration(currentTime);
+        break;
+      case IdlePriority:
+        expirationTime = Idle;
+        break;
+    const update = createUpdate(expirationTime, suspenseConfig); 创建个update对象，值得注意的是对象的tag属性是UpdateState（值为0）
+    enqueueUpdate(current, update); 保存update对象到fiber对象的updateQueue属性里
+    scheduleWork(current, expirationTime);
+
+
+
+
+
+
+
+
 参考资料:
 1. https://github.com/jsonz1993/react-source-learn/issues/
 2. https://github.com/KieSun/Dream/issues/
 3. https://didiheng.com/react/2019-05-12.html（待读）
+4. https://segmentfault.com/a/1190000020736992
+5. https://github.com/AttackXiaoJinJin/reactExplain/blob/master/react16.8.6/packages/react-reconciler/src/ReactFiberExpirationTime.js
+6. https://segmentfault.com/a/1190000020248630
+7. https://juejin.im/post/5d01f630e51d4555fc1acc8b
+
