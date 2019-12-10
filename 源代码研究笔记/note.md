@@ -5,9 +5,13 @@ React.Children.map
 
 ReactDOM.render 的大致思路
 function render(element, container)
-跳转 -> function legacyRenderSubtreeIntoContainer(container)
-    初始挂载    原生容器root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate)
-                fiberRoot = root._internalRoot;
+    return legacyRenderSubtreeIntoContainer(null, element, container, false, callback);
+    跳转 -> function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback)
+      root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate) //在原生容器上初始挂载 
+      fiberRoot = root._internalRoot;
+      unbatchedUpdates(() => {
+        updateContainer(children, fiberRoot, parentComponent, callback);
+      });
 
 function legacyRenderSubtreeIntoContainer(container)
     清除container内部
@@ -52,7 +56,7 @@ unbatchedUpdates
   executionContext 去除 BatchedContext位，声明 LegacyUnbatchedContext位
   回调 -> updateContainer()
     requestCurrentTimeForUpdate 获取目前的时间
-    computeExpirationForFiber(currentTime, current, suspenseConfig)
+    const expirationTime = computeExpirationForFiber(currentTime, current, suspenseConfig)
       getCurrentPriorityLevel() 来确认 优先级
         Scheduler_getCurrentPriorityLevel()
       根据不同优先级来采用不同计算方式
@@ -69,13 +73,11 @@ unbatchedUpdates
       case IdlePriority:
         expirationTime = Idle;
         break;
-    const update = createUpdate(expirationTime, suspenseConfig); 创建个update对象，值得注意的是对象的tag属性是UpdateState（值为0）
-    enqueueUpdate(current, update); 保存update对象到fiber对象的updateQueue属性里
+    const update = createUpdate(expirationTime, suspenseConfig); //创建个update对象，值得注意的是对象的tag属性是UpdateState（值为0）
+    enqueueUpdate(current, update); //保存update对象到fiber对象的updateQueue属性里
     scheduleWork(current, expirationTime);
 
-
-
-scheduleUpdateOnFiber
+scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   checkForNestedUpdates 检查内嵌循环
   const root = markUpdateTimeFromFiberToRoot(fiber, expirationTime);
 
@@ -91,4 +93,5 @@ scheduleUpdateOnFiber
 5. https://github.com/AttackXiaoJinJin/reactExplain/blob/master/react16.8.6/packages/react-reconciler/src/ReactFiberExpirationTime.js
 6. https://segmentfault.com/a/1190000020248630
 7. https://juejin.im/post/5d01f630e51d4555fc1acc8b
-
+8. https://cloud.tencent.com/developer/article/1507651
+9. https://axiu.me/coding/fiber-intro-and-structure/
