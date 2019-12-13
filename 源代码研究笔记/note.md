@@ -114,17 +114,23 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   const root = markUpdateTimeFromFiberToRoot(fiber, expirationTime);
 
 
+
+ReactFilberClassComponent.js
+enqueueSetState
+enqueueForceUpdate
+上面两个区别是update.tag有所不同，共同点是跟updateContainer有点像。
+
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
 2. expirationTime是怎么个算法，越小优先级就越高吗？
 3. FiberNode类属性的childExpirationTime是什么鬼
-4. doubleBuffer
+4. doubleBuffer 又是什么鬼
 
 
 参考资料:
 1. https://github.com/jsonz1993/react-source-learn/issues/
 2. https://github.com/KieSun/Dream/issues/
-3. https://didiheng.com/react/2019-05-12.html（作者水准比较菜，真的仅供参考）
+3. https://didiheng.com/react/2019-05-12.html（作者水准和我一样菜，仅供参考）
 4. https://segmentfault.com/a/1190000020736992
 5. https://github.com/AttackXiaoJinJin/reactExplain/blob/master/react16.8.6/packages/react-reconciler/src/ReactFiberExpirationTime.js
 6. https://segmentfault.com/a/1190000020248630
@@ -132,3 +138,4 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
 8. https://cloud.tencent.com/developer/article/1507651
 9. https://axiu.me/coding/fiber-intro-and-structure/
 10. https://github.com/acdlite/react-fiber-architecture
+11. https://zhuanlan.zhihu.com/p/55900504 （作者看上去有点功底，可以参考下）
