@@ -1,13 +1,39 @@
 **ReactDOM**
 
 React.Children.map
-对象池的概念，对于性能的提升。
+两点点: 对象池的概念，对于性能的提升。
+function mapChildren(children, func, context)
+    const result = [];
+    mapIntoWithKeyPrefixInternal(children, result, null, func, context);
+    return result;
+
+function mapIntoWithKeyPrefixInternal(children, array[要修改的最终结果], prefix, func, context)
+    let escapedPrefix = '';
+    if (prefix != null) {
+        escapedPrefix = escapeUserProvidedKey(prefix) + '/';
+    }
+    const traverseContext = getPooledTraverseContext(array, escapedPrefix, func, context,);//从对象池里随便获取一个对象，保存各种参数，提高性能
+    traverseAllChildren(children, mapSingleChildIntoContext, traverseContext);
+    releaseTraverseContext(traverseContext);//将对象给压回对象池，方便下次获取
+
+function traverseAllChildren(children, callback, traverseContext)
+    return traverseAllChildrenImpl(children, '', callback, traverseContext);
+    跳转到 function traverseAllChildrenImpl(children, nameSoFar, callback, traverseContext,)
+        先检查children是否是string，number，或者react节点 则直接callback(traverseContext, children, nameSoFar === '' ? SEPARATOR + getComponentKey(children, 0) : nameSoFar,);
+        如果不是，那则是数组，依次循环children，traverseAllChildrenImpl(child, nextName, callback, traverseContext,)
+
+function mapSingleChildIntoContext(bookKeeping, child, childKey)
+    从bookKeeping(traverseContext)提取出result, keyPrefix, func, context。
+    let mappedChild = func.call(context, child, bookKeeping.count++);
+    检查mappedChild是否是数组，如果是，则回调mapIntoWithKeyPrefixInternal(mappedChild, result, childKey, c => c);
+    如果不是，则视情况替换key，然后push到result内
+
 
 ReactDOM.render 的大致思路
 function render(element, container)
     return legacyRenderSubtreeIntoContainer(null, element, container, false, callback);
     跳转 -> function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback)
-      root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate) //在原生容器上初始挂载 
+      root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate) //在原生容器上初始挂载
       fiberRoot = root._internalRoot;
       unbatchedUpdates(() => {
         updateContainer(children, fiberRoot, parentComponent, callback);
@@ -45,17 +71,23 @@ function createHostRootFiber(tag: RootTag): Fiber
             return new FiberNode(tag, pendingProps, key, mode);
 
 FiberNode类属性
-stateNode 绑定了FiberRootNode
+stateNode 绑定了FiberRootNode，需要研究下如果是子FilberNode，这里stateNode会绑定什么？Class实例？Dom节点实例？
 return 父节点
 child 子节点
 sibling 兄弟节点
 这里需要注意 effectTag属性 和 alternate属性，看看后续会不会用到
+pendingProps 新的变动带来的新的props，即nextProps
+memoizedProps 上一次渲染完成后的props,即 props
+updateQueue 所产生的update，都会放在该队列中
+mode 有conCurrentMode和strictMode 用来描述当前Fiber和其他子树的Bitfield
+expirationTime 代表任务在未来的哪个时间点 应该被完成
+childExpirationTime 快速确定子树中是否有 update
 
 
 unbatchedUpdates
   executionContext 去除 BatchedContext位，声明 LegacyUnbatchedContext位
   回调 -> updateContainer()
-    requestCurrentTimeForUpdate 获取目前的时间
+    requestCurrentTimeForUpdate 获取目前的时间(MAGIC_NUMBER_OFFSET - ((ms / UNIT_SIZE) | 0))
     const expirationTime = computeExpirationForFiber(currentTime, current, suspenseConfig)
       getCurrentPriorityLevel() 来确认 优先级
         Scheduler_getCurrentPriorityLevel()
@@ -82,7 +114,11 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   const root = markUpdateTimeFromFiberToRoot(fiber, expirationTime);
 
 
-
+问题清单:
+1. scheduleUpdateOnFiber到底做了哪些东西
+2. expirationTime是怎么个算法，越小优先级就越高吗？
+3. FiberNode类属性的childExpirationTime是什么鬼
+4. doubleBuffer
 
 
 参考资料:
@@ -95,3 +131,4 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
 7. https://juejin.im/post/5d01f630e51d4555fc1acc8b
 8. https://cloud.tencent.com/developer/article/1507651
 9. https://axiu.me/coding/fiber-intro-and-structure/
+10. https://github.com/acdlite/react-fiber-architecture
