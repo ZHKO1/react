@@ -89,6 +89,7 @@ unbatchedUpdates
   回调 -> updateContainer()
     requestCurrentTimeForUpdate 获取目前的时间(MAGIC_NUMBER_OFFSET - ((ms / UNIT_SIZE) | 0))
     const expirationTime = computeExpirationForFiber(currentTime, current, suspenseConfig)
+      // 代码看下来 expirationTime越小，优先级则越低。expirationTime越大，优先级则越高。
       getCurrentPriorityLevel() 来确认 优先级
         Scheduler_getCurrentPriorityLevel()
       根据不同优先级来采用不同计算方式
@@ -137,6 +138,7 @@ enqueueForceUpdate
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
 2. expirationTime是怎么个算法，越小优先级就越高吗？
+  补充：后续怎么根据expirationTime来判断是否运行？
 3. FiberNode类属性的childExpirationTime是什么鬼
 4. doubleBuffer 又是什么鬼
 
@@ -153,3 +155,4 @@ enqueueForceUpdate
 9. https://axiu.me/coding/fiber-intro-and-structure/
 10. https://github.com/acdlite/react-fiber-architecture
 11. https://zhuanlan.zhihu.com/p/55900504 （作者看上去有点功底，可以参考下）
+12. https://zhuanlan.zhihu.com/p/40987447 
