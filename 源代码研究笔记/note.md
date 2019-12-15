@@ -109,6 +109,20 @@ unbatchedUpdates
     enqueueUpdate(current, update); //保存update对象到fiber对象的updateQueue属性里
     scheduleWork(current, expirationTime);
 
+
+enqueueUpdate的逻辑，我们来看看react是如何将update压入到fiber.updateQueue队列里
+我看下来理解的是queue1和queue2有可能是不同对象，但是实质上两个队列最新的update都是一致的。
+1. queue1取的是fiber.updateQueue;
+   queue2取的是alternate.updateQueue
+2. fiber和alternate都不为空的话，则进行后续步骤
+ 1). 如果两者均为null，则调用createUpdateQueue()获取初始队列；如果两者之一为null，则调用cloneUpdateQueue()从对方中复制来一个新的队列
+ 2). 此时两者均初始化完毕
+  1]. 两者相同 则只需要对其中一个队列操作即可
+  2]. 两者不同 如果有一个或者两个队列为空，那么压入update
+      如果两个队列都有数据，那么都操作（这里代码对queue1操作，queue2避免多余的操作）
+3. alternate为空的话，则只对fiber操作
+
+
 scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   checkForNestedUpdates 检查内嵌循环
   const root = markUpdateTimeFromFiberToRoot(fiber, expirationTime);
