@@ -127,6 +127,19 @@ enqueueUpdate的逻辑，我们来看看react是如何将update压入到fiber.up
 scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   checkForNestedUpdates 检查内嵌循环
   const root = markUpdateTimeFromFiberToRoot(fiber, expirationTime);
+    更新fiber.expirationTime, fiber.alternate.expirationTime
+    往上更新父节点的childExpirationTime，以及父节点alternate.expirationTime，同时获得了root（FiberRoot节点）
+    记录更新root的firstPendingTime
+    返回root
+  checkForInterruption(fiber, expirationTime);//_DEV_,暂且不用看
+  recordScheduleUpdate();//_DEV_,暂且不用看
+  const priorityLevel = getCurrentPriorityLevel();
+  当流程还处于unbatchedUpdates阶段，未进入rending阶段（RenderContext | CommitContext）{
+      schedulePendingInteractions(root, expirationTime);
+        scheduleInteractions(root, expirationTime, __interactionsRef.current);
+
+      performSyncWorkOnRoot(root);
+  }
 
 
 
@@ -141,6 +154,14 @@ enqueueForceUpdate
   补充：后续怎么根据expirationTime来判断是否运行？
 3. FiberNode类属性的childExpirationTime是什么鬼
 4. doubleBuffer 又是什么鬼
+5. markUpdateTimeFromFiberToRoot里这些函数都是什么鬼
+    markUnprocessedUpdateTime
+    markRootSuspendedAtTime
+    markRootUpdatedAtTime
+    firstSuspendedTime lastSuspendedTime lastPingedTime又是什么鬼
+    firstPendingTime和lastPendingTime 最旧，最新挂起时间又是什么鬼
+6. __interactionsRef.current
+
 
 
 参考资料:
