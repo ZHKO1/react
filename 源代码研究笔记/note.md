@@ -1,5 +1,10 @@
 **ReactDOM**
 
+ReactFilberClassComponent.js
+enqueueSetState
+enqueueForceUpdate
+上面两个区别是update.tag有所不同，共同点是跟updateContainer有点像。
+
 React.Children.map
 两点点: 对象池的概念，对于性能的提升。
 function mapChildren(children, func, context)
@@ -136,17 +141,11 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   const priorityLevel = getCurrentPriorityLevel();
   当流程还处于unbatchedUpdates阶段，未进入rending阶段（RenderContext | CommitContext）{
       schedulePendingInteractions(root, expirationTime);
-        scheduleInteractions(root, expirationTime, __interactionsRef.current);
-
+        scheduleInteractions(root, expirationTime, __interactionsRef.current);//初次加载时，没用到此函数，暂且先不看（光看代码逻辑，似乎是跟踪栈？等后续再看看这玩意儿到底是什么）
       performSyncWorkOnRoot(root);
   }
 
-
-
-ReactFilberClassComponent.js
-enqueueSetState
-enqueueForceUpdate
-上面两个区别是update.tag有所不同，共同点是跟updateContainer有点像。
+performSyncWorkOnRoot
 
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
@@ -160,8 +159,9 @@ enqueueForceUpdate
     markRootUpdatedAtTime
     firstSuspendedTime lastSuspendedTime lastPingedTime又是什么鬼
     firstPendingTime和lastPendingTime 最旧，最新挂起时间又是什么鬼
-6. __interactionsRef.current
-
+6. schedulePendingInteractions到底是什么鬼，什么情况下会用到__interactionsRef.current？
+7. FiberRoot节点的lastExpiredTime到底是什么鬼？似乎会记录过期的任务
+8. workInProgressRoot？renderExpirationTime？workInProgress？
 
 
 参考资料:
