@@ -146,6 +146,16 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
   }
 
 performSyncWorkOnRoot
+  var lastExpiredTime = root.lastExpiredTime;
+  var expirationTime = lastExpiredTime !== NoWork ? lastExpiredTime : Sync;
+  if (root.finishedExpirationTime === expirationTime) {
+    //以后再看
+  } else {
+    先检查阶段(RenderContext | CommitContext))
+    flushPassiveEffects(); //初次加载也什么都没做
+  }
+
+
 
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
@@ -177,3 +187,6 @@ performSyncWorkOnRoot
 10. https://github.com/acdlite/react-fiber-architecture
 11. https://zhuanlan.zhihu.com/p/55900504 （作者看上去有点功底，可以参考下）
 12. https://zhuanlan.zhihu.com/p/40987447 
+13. https://blog.csdn.net/luo_qianyu/article/details/103374486
+14. http://que01.github.io/2019/08/28/v16-Scheduling-in-React/
+14. https://www.youmeng.me/article/288
