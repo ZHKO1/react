@@ -1,10 +1,5 @@
 **ReactDOM**
 
-1. 断点解析跑完渲染的全部逻辑
-2. 啃英文资料 明白官方是怎么描述整个构架
-3. 啃中文资料
-4. FUCKYOU
-
 ReactFilberClassComponent.js
 enqueueSetState
 enqueueForceUpdate
