@@ -201,8 +201,9 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
     const prevState = workInProgress.memoizedState;
     const prevChildren = prevState !== null ? prevState.element : null;
     processUpdateQueue( workInProgress, updateQueue, nextProps, null, renderExpirationTime, );
-      这里
+      //
     const nextState = workInProgress.memoizedState;
+    const nextChildren = nextState.element;
     reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
     return workInProgress.child;
 
@@ -247,4 +248,10 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
 20. https://szhshp.org/tech/2019/08/10/reactindepthrender.html
 21. https://zhuanlan.zhihu.com/p/36926155
 22. https://www.cnblogs.com/lcllao/p/9642376.html
-
+23. http://zxc0328.github.io/2017/09/28/react-16-source/
+24. https://zhuanlan.zhihu.com/p/54042084
+25. http://echizen.github.io/tech/2019/04-06-react-fibernode-diff
+26. http://zxc0328.github.io/2017/09/28/react-16-source/（2017年的文章，可能过时了）
+27. https://segmentfault.com/a/1190000017321684?utm_source=tag-newest（翻译国外文章，仅供参考）
+28. https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/18
+29. https://github.com/yygmind/blog/issues/43
