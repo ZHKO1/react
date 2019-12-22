@@ -1,5 +1,10 @@
 **ReactDOM**
 
+1. 断点解析跑完渲染的全部逻辑
+2. 啃英文资料 明白官方是怎么描述整个构架
+3. 啃中文资料
+4. FUCKYOU
+
 ReactFilberClassComponent.js
 enqueueSetState
 enqueueForceUpdate
@@ -145,7 +150,7 @@ scheduleUpdateOnFiber(和scheduleWork是同一个函数)
       performSyncWorkOnRoot(root);
   }
 
-performSyncWorkOnRoot
+performSyncWorkOnRoot(root)
   var lastExpiredTime = root.lastExpiredTime;
   var expirationTime = lastExpiredTime !== NoWork ? lastExpiredTime : Sync;
   if (root.finishedExpirationTime === expirationTime) {
@@ -153,9 +158,58 @@ performSyncWorkOnRoot
   } else {
     先检查阶段(RenderContext | CommitContext))
     flushPassiveEffects(); //初次加载也什么都没做
+    如果 全局参数workInProgressRoot 和 renderExpirationTime未初始化
+      prepareFreshStack(root, expirationTime);
+        workInProgressRoot = root;
+        workInProgress = createWorkInProgress(root.current, null, expirationTime);// 此函数里获取current.alternate 为 workInProgress，并重新初始化;
+        renderExpirationTime = expirationTime;        
+      startWorkOnPendingInteractions(root, expirationTime);//初始化似乎没咋鸟用
+    executionContext |= RenderContext;
+    const prevDispatcher = pushDispatcher(root); //不明觉厉 后续再看这个有个鸟用
+    do {
+      try {
+        workLoopSync();
+        break;
+      } catch (thrownValue) {
+        handleError(root, thrownValue);
+      }
+    } while (true);
   }
 
 
+workLoopSync()
+  while (workInProgress !== null) {
+    workInProgress = performUnitOfWork(workInProgress);
+      跳转 -> performUnitOfWork(unitOfWork)
+        const current = unitOfWork.alternate;
+        let next;
+        next = beginWork(current, unitOfWork, renderExpirationTime);
+        unitOfWork.memoizedProps = unitOfWork.pendingProps;
+        if (next === null) {
+          next = completeUnitOfWork(unitOfWork);
+        }
+        return next;
+  }
+  
+  
+beginWork(current, workInProgress, renderExpirationTime,)
+  const updateExpirationTime = workInProgress.expirationTime;
+  workInProgress.expirationTime = NoWork;
+  根据 workInProgress.tag 进入不同分支
+  case HostRoot:
+    return updateHostRoot(current, workInProgress, renderExpirationTime);
+
+
+updateHostRoot(current, workInProgress, renderExpirationTime)
+    const updateQueue = workInProgress.updateQueue;
+    const nextProps = workInProgress.pendingProps;
+    const prevState = workInProgress.memoizedState;
+    const prevChildren = prevState !== null ? prevState.element : null;
+    processUpdateQueue( workInProgress, updateQueue, nextProps, null, renderExpirationTime, );
+      这里
+    const nextState = workInProgress.memoizedState;
+    reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
+    return workInProgress.child;
 
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
@@ -172,6 +226,7 @@ performSyncWorkOnRoot
 6. schedulePendingInteractions到底是什么鬼，什么情况下会用到__interactionsRef.current？
 7. FiberRoot节点的lastExpiredTime到底是什么鬼？似乎会记录过期的任务
 8. workInProgressRoot？renderExpirationTime？workInProgress？
+9. updateExpirationTime < renderExpirationTime 是什么鬼概念？比如processUpdateQueue里就有
 
 
 参考资料:
@@ -189,4 +244,12 @@ performSyncWorkOnRoot
 12. https://zhuanlan.zhihu.com/p/40987447 
 13. https://blog.csdn.net/luo_qianyu/article/details/103374486
 14. http://que01.github.io/2019/08/28/v16-Scheduling-in-React/
-14. https://www.youmeng.me/article/288
+15. https://www.youmeng.me/article/288
+16. https://github.com/Foveluy/Luy/issues
+17. https://react.jokcy.me/
+18. https://www.jianshu.com/p/9c360697fe09
+19. http://shymean.com/article/%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E7%AE%80%E6%98%93%E7%9A%84React
+20. https://szhshp.org/tech/2019/08/10/reactindepthrender.html
+21. https://zhuanlan.zhihu.com/p/36926155
+22. https://www.cnblogs.com/lcllao/p/9642376.html
+
