@@ -255,3 +255,6 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
 27. https://segmentfault.com/a/1190000017321684?utm_source=tag-newest（翻译国外文章，仅供参考）
 28. https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/18
 29. https://github.com/yygmind/blog/issues/43
+30. https://juejin.im/post/5cb5b4926fb9a068b52fb823
+31. https://juejin.im/post/5cb66fdaf265da0384128445
+32. https://overreacted.io/zh-hans/react-as-a-ui-runtime/
