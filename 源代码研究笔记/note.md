@@ -201,7 +201,23 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
     const prevState = workInProgress.memoizedState;
     const prevChildren = prevState !== null ? prevState.element : null;
     processUpdateQueue( workInProgress, updateQueue, nextProps, null, renderExpirationTime, );
-      //
+      -> processUpdateQueue(workInProgress, queue, props, instance, renderExpirationTime)
+        queue = ensureWorkInProgressQueueIsAClone(workInProgress, queue); //如果workInProgress.updateQueue 和 current.updateQueue都是用同一个对象，那么就要复制对象来以便区分
+        let newBaseState = queue.baseState;
+        let newFirstUpdate = null;
+        let newExpirationTime = NoWork;
+        let update = queue.firstUpdate;
+        let resultState = newBaseState;
+        从update开始，根据update = update.next 循环
+        resultState = getStateFromUpdate(workInProgress, queue, update, resultState, props, instance,);
+         -> getStateFromUpdate(workInProgress, queue, update, prevState, nextProps, instance,)
+            根据update.tag来判断
+            case UpdateState:const partialState = update.payload;return Object.assign({}, prevState, partialState);//这里payload是对象类型，如果是函数类型，还需要执行下
+        queue.baseState = newBaseState;//这里newBaseState还会被resultState给覆盖
+        queue.firstUpdate = newFirstUpdate;//如果优先级到了，而且update都合并完了，这里newFirstUpdate会为空。后续研究updateExpirationTime < renderExpirationTime的情况
+        queue.firstCapturedUpdate = newFirstCapturedUpdate;
+        workInProgress.expirationTime = newExpirationTime;//看起来如果优先级到了，而且update都合并完毕后，newExpirationTime会为空
+        workInProgress.memoizedState = resultState;
     const nextState = workInProgress.memoizedState;
     const nextChildren = nextState.element;
     reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
@@ -223,6 +239,8 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
 7. FiberRoot节点的lastExpiredTime到底是什么鬼？似乎会记录过期的任务
 8. workInProgressRoot？renderExpirationTime？workInProgress？
 9. updateExpirationTime < renderExpirationTime 是什么鬼概念？比如processUpdateQueue里就有
+10. queue.firstCapturedUpdate是什么鬼？什么情况下会用到这个？目前仅知processUpdateQueue
+11. processUpdateQueue下 什么情况下才会有updateExpirationTime < renderExpirationTime？
 
 
 参考资料:
@@ -261,3 +279,4 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
 33. https://github.com/react-guide/react-basic(React作者的设计初衷)
 34. https://zhuanlan.zhihu.com/p/30171318(函数式编程 和 Redux的关系，与第33条链接有一定的关系)
 35. https://zhuanlan.zhihu.com/p/76158581(代数效应（Algebraic Effects）第33条链接的最后一条)
+36. https://segmentfault.com/a/1190000012834204（两年前的文章了，依然是理解React最重要的几篇文章之一）
