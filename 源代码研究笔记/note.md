@@ -112,6 +112,7 @@ unbatchedUpdates
         expirationTime = Idle;
         break;
     const update = createUpdate(expirationTime, suspenseConfig); //创建个update对象，值得注意的是对象的tag属性是UpdateState（值为0）
+    update.payload = {element};
     enqueueUpdate(current, update); //保存update对象到fiber对象的updateQueue属性里
     scheduleWork(current, expirationTime);
 
@@ -220,8 +221,30 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
         workInProgress.memoizedState = resultState;
     const nextState = workInProgress.memoizedState;
     const nextChildren = nextState.element;
+    // 判断nextChildren和prevChildren不一致，同时也不是服务器渲染
     reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
     return workInProgress.child;
+
+reconcileChildren(current, workInProgress, nextChildren, renderExpirationTime,)
+    if (current === null) {
+        workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderExpirationTime,);
+    } else {
+        workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren, renderExpirationTime,);
+    }
+
+const reconcileChildFibers = ChildReconciler(true);
+const mountChildFibers = ChildReconciler(false);
+
+ChildReconciler(shouldTrackSideEffects)
+    reconcileChildFibers(returnFiber, currentFirstChild, newChild, expirationTime,)
+        // 这里根据我的理解
+        // returnFiber是指最新的workInProgress，
+        // currentFirstChild是指current下的第一个子节点
+        // nextChildren是指workInProgress下第一个子节点
+        根据newChild.$$typeof来判断 并 返回 workInProgress.child
+        return placeSingleChild( reconcileSingleElement(returnFiber, currentFirstChild, newChild, expirationTime,),)
+    return reconcileChildFibers;//函数内定义函数，这里返回子函数
+
 
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
