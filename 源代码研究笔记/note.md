@@ -236,6 +236,40 @@ const reconcileChildFibers = ChildReconciler(true);
 const mountChildFibers = ChildReconciler(false);
 
 ChildReconciler(shouldTrackSideEffects)
+    deleteChild(returnFiber, childToDelete){
+        // 这里我的理解是记录要做出的改动到returnFiber上。
+        // 同时childToDelete本身清除nextEffect属性，比较意外的是nextEffect直接就是Fiber类型的吗？
+        // 从首次渲染整个流程看下来，是returnFiber是指workInProgress
+        // 后续看实际渲染时，到底是怎么个逻辑
+        const last = returnFiber.lastEffect;
+        if (last !== null) {
+          last.nextEffect = childToDelete;
+          returnFiber.lastEffect = childToDelete;
+        } else {
+          returnFiber.firstEffect = returnFiber.lastEffect = childToDelete;
+        }
+        childToDelete.nextEffect = null;
+        childToDelete.effectTag = Deletion;
+
+    deleteRemainingChildren(returnFiber, currentFirstChild,)
+        // 这里可以看到直接一不做二不休直接全删了....
+        let childToDelete = currentFirstChild;
+        while (childToDelete !== null) {
+          deleteChild(returnFiber, childToDelete);
+          childToDelete = childToDelete.sibling;
+        }
+        return null;
+
+    reconcileSingleElement(returnFiber, currentFirstChild, element, expirationTime,)
+        首先获取workInProgress下第一个子节点的key，与currentFirstChild的key对比
+        从var child = currentFirstChild以及child = child.sibling下个兄弟节点循环下去
+            如果一致{
+                如果child是Fragment类型 则deleteRemainingChildren(returnFiber, child);
+                如果不是 则deleteRemainingChildren(returnFiber, child);
+            }
+            如果不一致则 deleteChild(returnFiber, child)
+
+
     reconcileChildFibers(returnFiber, currentFirstChild, newChild, expirationTime,)
         // 这里根据我的理解
         // returnFiber是指最新的workInProgress，
@@ -264,6 +298,7 @@ ChildReconciler(shouldTrackSideEffects)
 9. updateExpirationTime < renderExpirationTime 是什么鬼概念？比如processUpdateQueue里就有
 10. queue.firstCapturedUpdate是什么鬼？什么情况下会用到这个？目前仅知processUpdateQueue
 11. processUpdateQueue下 什么情况下才会有updateExpirationTime < renderExpirationTime？
+12. shouldTrackSideEffects是什么鬼？
 
 
 参考资料:
