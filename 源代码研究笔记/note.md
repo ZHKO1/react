@@ -192,9 +192,10 @@ beginWork(current, workInProgress, renderExpirationTime,)
   const updateExpirationTime = workInProgress.expirationTime;
   workInProgress.expirationTime = NoWork;
   根据 workInProgress.tag 进入不同分支
-  case HostRoot:
+  case HostRoot: 
     return updateHostRoot(current, workInProgress, renderExpirationTime);
-
+  case IndeterminateComponent:
+    return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderExpirationTime,);
 
 updateHostRoot(current, workInProgress, renderExpirationTime)
     const updateQueue = workInProgress.updateQueue;
@@ -220,10 +221,14 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
         workInProgress.expirationTime = newExpirationTime;//看起来如果优先级到了，而且update都合并完毕后，newExpirationTime会为空
         workInProgress.memoizedState = resultState;
     const nextState = workInProgress.memoizedState;
-    const nextChildren = nextState.element;
+    const nextChildren = nextState.element; //这里可以看到React作者把jsx生成的那一套给存在element里，和我想象的有点不一样
     // 判断nextChildren和prevChildren不一致，同时也不是服务器渲染
     reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
     return workInProgress.child;
+
+mountIndeterminateComponent(_current, workInProgress, Component, renderExpirationTime,)
+
+
 
 reconcileChildren(current, workInProgress, nextChildren, renderExpirationTime,)
     if (current === null) {
@@ -261,22 +266,28 @@ ChildReconciler(shouldTrackSideEffects)
         return null;
 
     reconcileSingleElement(returnFiber, currentFirstChild, element, expirationTime,)
-        首先获取workInProgress下第一个子节点的key，与currentFirstChild的key对比
+        首先获取element的key(workInProgress下第一个子节点的key)，与currentFirstChild的key对比
         从var child = currentFirstChild以及child = child.sibling下个兄弟节点循环下去
             如果一致{
-                如果child是Fragment类型 则deleteRemainingChildren(returnFiber, child);
+                如果child是Fragment类型 则deleteRemainingChildren(returnFiber, child.sibling);
                 如果不是 则deleteRemainingChildren(returnFiber, child);
             }
             如果不一致则 deleteChild(returnFiber, child)
+        const created = createFiberFromElement(element, returnFiber.mode, expirationTime,);
+        created.ref = coerceRef(returnFiber, currentFirstChild, element);
+        created.return = returnFiber;
+        return created;
+        
 
 
     reconcileChildFibers(returnFiber, currentFirstChild, newChild, expirationTime,)
         // 这里根据我的理解
         // returnFiber是指最新的workInProgress，
-        // currentFirstChild是指current下的第一个子节点
-        // nextChildren是指workInProgress下第一个子节点
+        // currentFirstChild是指current下的第一个子节点，Fiber类型
+        // newChild是指 ReactElement类型
         根据newChild.$$typeof来判断 并 返回 workInProgress.child
         return placeSingleChild( reconcileSingleElement(returnFiber, currentFirstChild, newChild, expirationTime,),)
+
     return reconcileChildFibers;//函数内定义函数，这里返回子函数
 
 
