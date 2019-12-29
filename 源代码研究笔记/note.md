@@ -192,10 +192,38 @@ beginWork(current, workInProgress, renderExpirationTime,)
   const updateExpirationTime = workInProgress.expirationTime;
   workInProgress.expirationTime = NoWork;
   根据 workInProgress.tag 进入不同分支
-  case HostRoot: 
+  case HostRoot: //万恶之源
     return updateHostRoot(current, workInProgress, renderExpirationTime);
-  case IndeterminateComponent:
+  case HostComponent: //原生节点
+    return updateHostComponent(current, workInProgress, renderExpirationTime);
+  case IndeterminateComponent: // 纯函数组件
     return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderExpirationTime,);
+
+updateHostComponent(current, workInProgress, renderExpirationTime)
+    const type = workInProgress.type;
+    const nextProps = workInProgress.pendingProps;
+    const prevProps = current !== null ? current.memoizedProps : null;
+    let nextChildren = nextProps.children;
+    const isDirectTextChild = shouldSetTextContent(type, nextProps);
+    如果isDirectTextChild为true，则nextChildren = null;
+    markRef(current, workInProgress); //之后有机会再去研究
+    reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
+    return workInProgress.child;
+
+mountIndeterminateComponent(_current, workInProgress, Component, renderExpirationTime,)
+  const props = workInProgress.pendingProps;
+  let context;
+  const unmaskedContext = getUnmaskedContext(workInProgress, Component, false,);
+  context = getMaskedContext(workInProgress, unmaskedContext);
+  prepareToReadContext(workInProgress, renderExpirationTime);
+  // 上面三行看起来是读取context的逻辑，这里我先跳过不管
+  value = renderWithHooks(null, workInProgress, Component, props, context, renderExpirationTime,);
+  // Hook的逻辑暂且先不管 上一行代码可以视为let children = Component(props, refOrContext);
+  workInProgress.effectTag |= PerformedWork;
+  //根据value来判断是class组件还是纯函数组件，这里先跟着纯函数组件跑
+  workInProgress.tag = FunctionComponent;
+  reconcileChildren(null, workInProgress, value, renderExpirationTime);
+  return workInProgress.child;
 
 updateHostRoot(current, workInProgress, renderExpirationTime)
     const updateQueue = workInProgress.updateQueue;
@@ -225,10 +253,6 @@ updateHostRoot(current, workInProgress, renderExpirationTime)
     // 判断nextChildren和prevChildren不一致，同时也不是服务器渲染
     reconcileChildren( current, workInProgress, nextChildren, renderExpirationTime,);
     return workInProgress.child;
-
-mountIndeterminateComponent(_current, workInProgress, Component, renderExpirationTime,)
-
-
 
 reconcileChildren(current, workInProgress, nextChildren, renderExpirationTime,)
     if (current === null) {
@@ -265,6 +289,25 @@ ChildReconciler(shouldTrackSideEffects)
         }
         return null;
 
+    reconcileChildrenArray(returnFiber, currentFirstChild, newChildren, expirationTime,)
+        实际上逻辑还蛮复杂的，我们先看首次渲染的逻辑
+        很明显，首次渲染情况下，currentFirstChild铁定为空
+        for (; newIdx < newChildren.length; newIdx++) {
+          const newFiber = createChild(returnFiber, newChildren[newIdx],expirationTime,);
+          if (newFiber === null) {
+            continue;
+          }
+          lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+          if (previousNewFiber === null) {
+            resultingFirstChild = newFiber;
+          } else {
+            previousNewFiber.sibling = newFiber;
+          }
+          previousNewFiber = newFiber;
+        }
+        return resultingFirstChild;
+        
+
     reconcileSingleElement(returnFiber, currentFirstChild, element, expirationTime,)
         首先获取element的key(workInProgress下第一个子节点的key)，与currentFirstChild的key对比
         从var child = currentFirstChild以及child = child.sibling下个兄弟节点循环下去
@@ -279,17 +322,40 @@ ChildReconciler(shouldTrackSideEffects)
         return created;
         
 
-
     reconcileChildFibers(returnFiber, currentFirstChild, newChild, expirationTime,)
         // 这里根据我的理解
         // returnFiber是指最新的workInProgress，
         // currentFirstChild是指current下的第一个子节点，Fiber类型
         // newChild是指 ReactElement类型
-        根据newChild.$$typeof来判断 并 返回 workInProgress.child
-        return placeSingleChild( reconcileSingleElement(returnFiber, currentFirstChild, newChild, expirationTime,),)
+        如果newChild是对象
+          根据newChild.$$typeof来判断 并 返回 returnFiber.child
+          return placeSingleChild( reconcileSingleElement(returnFiber, currentFirstChild, newChild, expirationTime,),)
+        如果是数组
+          return reconcileChildrenArray(returnFiber, currentFirstChild, newChild, expirationTime,);
 
     return reconcileChildFibers;//函数内定义函数，这里返回子函数
 
+completeUnitOfWork(unitOfWork)
+  workInProgress = unitOfWork;
+  do {
+    const current = workInProgress.alternate;
+    const returnFiber = workInProgress.return;
+    
+    这里React团队会验证workInProgress的effectTag是否处于完成状态
+    next = completeWork(current, workInProgress, renderExpirationTime);
+    resetChildExpirationTime(workInProgress);
+    
+    
+    const siblingFiber = workInProgress.sibling;
+    if (siblingFiber !== null) {
+      return siblingFiber;
+    }
+    workInProgress = returnFiber;
+  } while (workInProgress !== null);
+  return null;
+
+completeWork(current, workInProgress, renderExpirationTime)
+  const newProps = workInProgress.pendingProps;
 
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
@@ -310,6 +376,10 @@ ChildReconciler(shouldTrackSideEffects)
 10. queue.firstCapturedUpdate是什么鬼？什么情况下会用到这个？目前仅知processUpdateQueue
 11. processUpdateQueue下 什么情况下才会有updateExpirationTime < renderExpirationTime？
 12. shouldTrackSideEffects是什么鬼？
+13. mountIndeterminateComponent什么情况下_current会存在？
+14. effectTag下 PerformedWork是什么鬼？按照什么逻辑来？
+15. class组件也是会走mountIndeterminateComponent这条路的？
+16. completeUnitOfWork里为什么需要验证effectTag？还需要resetChildExpirationTime？
 
 
 参考资料:
