@@ -356,7 +356,20 @@ completeUnitOfWork(unitOfWork)
 
 completeWork(current, workInProgress, renderExpirationTime)
   const newProps = workInProgress.pendingProps;
-
+  根据workInProgress.tag进入不同分支
+  case HostComponent:
+    const rootContainerInstance = getRootHostContainer();
+    const type = workInProgress.type;
+    let instance = createInstance(type, newProps, rootContainerInstance, currentHostContext, workInProgress,);
+      跳转 -> createInstance(type, props, rootContainerInstance, hostContext, internalInstanceHandle,)
+        const domElement: Instance = createElement(type, props, rootContainerInstance, parentNamespace,);
+        大致上就是创建个原生节点
+    appendAllChildren(instance, workInProgress, false, false);
+    完成的fiber 将所有子节点的原生节点都添加进该fiber的原生节点
+    workInProgress.stateNode = instance;
+    fiber和原生节点对应
+  
+  
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
 2. expirationTime是怎么个算法，越小优先级就越高吗？
