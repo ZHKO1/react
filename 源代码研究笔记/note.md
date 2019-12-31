@@ -170,6 +170,10 @@ performSyncWorkOnRoot(root)
         handleError(root, thrownValue);
       }
     } while (true);
+    root.finishedWork = root.current.alternate;
+    root.finishedExpirationTime = expirationTime;
+    finishSyncRender(root, workInProgressRootExitStatus, expirationTime);
+    ensureRootIsScheduled(root);
   }
 
 
@@ -343,9 +347,11 @@ completeUnitOfWork(unitOfWork)
     
     这里React团队会验证workInProgress的effectTag是否处于完成状态
     next = completeWork(current, workInProgress, renderExpirationTime);
-    resetChildExpirationTime(workInProgress);
-    
-    
+    resetChildExpirationTime(workInProgress);//更新ChildExpirationTime
+
+    之后的逻辑看起来是要判断父节点是否是非完成状态
+    如果不是，则将该节点的firstEffect给赋值于父节点
+
     const siblingFiber = workInProgress.sibling;
     if (siblingFiber !== null) {
       return siblingFiber;
@@ -368,7 +374,19 @@ completeWork(current, workInProgress, renderExpirationTime)
     完成的fiber 将所有子节点的原生节点都添加进该fiber的原生节点
     workInProgress.stateNode = instance;
     fiber和原生节点对应
-  
+  return null;
+
+finishSyncRender(root, exitStatus, expirationTime)
+    commitRoot(root);
+    跳转 -> commitRoot(root)
+        const renderPriorityLevel = getCurrentPriorityLevel();
+          runWithPriority(
+            ImmediatePriority,
+            commitRootImpl.bind(null, root, renderPriorityLevel),
+          );
+        return null;
+
+ensureRootIsScheduled
   
 问题清单:
 1. scheduleUpdateOnFiber到底做了哪些东西
@@ -393,6 +411,8 @@ completeWork(current, workInProgress, renderExpirationTime)
 14. effectTag下 PerformedWork是什么鬼？按照什么逻辑来？
 15. class组件也是会走mountIndeterminateComponent这条路的？
 16. completeUnitOfWork里为什么需要验证effectTag？还需要resetChildExpirationTime？
+17. fiber节点的actualDuration 和 selfBaseDuration是什么鬼？
+18. fiber节点的actualDuration 和 selfBaseDuration是什么鬼？
 
 
 参考资料:
