@@ -6,15 +6,48 @@
     <script src="babel.js"></script>
     <div id="container"></div>
     <script type="text/babel">
-      var DAMN = (<div id="FUCKYOU">
-        <div key="damn1">DAMN1</div>
-        <div key="damn2">DAMN2</div>
-        <div>DAMN</div>
-      </div>);
-      ReactDOM.render(
-        DAMN,
-        document.getElementById('container')
-      );
+      class App extends React.Component {
+        constructor() {
+          super(...arguments);
+
+          this.onClick = this.onClick.bind(this);
+          this.onClickLater = this.onClickLater.bind(this);
+
+          this.state = {
+            count: 0
+          };
+        }
+
+        onClick() {
+          this.setState({count: this.state.count + 1});
+          console.log('# this.state', this.state);
+        }
+
+        onClickLater() {
+          setTimeout(() => {
+            this.onClick();
+          });
+        }
+
+        componentDidMount() {
+          document.querySelector('#btn-raw').addEventListener('click', this.onClick);
+        }
+
+        render() {
+          console.log('#enter render');
+          return (
+            <div>
+              <div>{this.state.count}
+                <button onClick={this.onClick}>Increment</button>
+                <button id="btn-raw">Increment Raw</button>
+                <button onClick={this.onClickLater}>Increment Later</button>
+              </div>
+            </div>
+          )
+        }
+      }
+
+      ReactDOM.render(<App />, document.querySelector('#container'));
     </script>
   </body>
 </html>

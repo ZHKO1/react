@@ -416,16 +416,12 @@ ensureRootIsScheduled
 
 
 参考资料:
-1. https://github.com/jsonz1993/react-source-learn/issues/
-2. https://github.com/KieSun/Dream/issues/
-3. https://didiheng.com/react/2019-05-12.html（作者水准和我一样菜，仅供参考）
+1. https://github.com/jsonz1993/react-source-learn/issues/（引用目录可以参考下）
+2. https://github.com/KieSun/Dream/issues/（issues其他文章可以看看）
 4. https://segmentfault.com/a/1190000020736992
-5. https://github.com/AttackXiaoJinJin/reactExplain/blob/master/react16.8.6/packages/react-reconciler/src/ReactFiberExpirationTime.js
-6. https://segmentfault.com/a/1190000020248630
-7. https://juejin.im/post/5d01f630e51d4555fc1acc8b
-8. https://cloud.tencent.com/developer/article/1507651
-9. https://axiu.me/coding/fiber-intro-and-structure/
-10. https://github.com/acdlite/react-fiber-architecture
+6. https://www.jianshu.com/u/43a987628571（是有点干货，比前几个要强）
+7. https://juejin.im/post/5d01f630e51d4555fc1acc8b（有几篇文章也许值得一看）
+9. https://axiu.me/coding/fiber-intro-and-structure/（实际上也挺水的）
 11. https://zhuanlan.zhihu.com/p/55900504 （作者看上去有点功底，可以参考下）
 12. https://zhuanlan.zhihu.com/p/40987447 
 13. https://blog.csdn.net/luo_qianyu/article/details/103374486
@@ -451,4 +447,6 @@ ensureRootIsScheduled
 33. https://github.com/react-guide/react-basic(React作者的设计初衷)
 34. https://zhuanlan.zhihu.com/p/30171318(函数式编程 和 Redux的关系，与第33条链接有一定的关系)
 35. https://zhuanlan.zhihu.com/p/76158581(代数效应（Algebraic Effects）第33条链接的最后一条)
+10. https://github.com/acdlite/react-fiber-architecture（国外文章）
 36. https://segmentfault.com/a/1190000012834204（两年前的文章了，依然是理解React最重要的几篇文章之一）
+37. https://www.zhihu.com/people/hardfist/posts (可能有好文章，先马克下，不过是很遥远的事情了)
