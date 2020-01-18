@@ -67,3 +67,17 @@ handleTimeout
   advanceTimers(currentTime);
   重新确认taskQueue队列是否都执行完毕
   不然的话继续requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
+
+unstable_runWithPriority(priorityLevel, eventHandler)
+  var previousPriorityLevel = currentPriorityLevel;
+  currentPriorityLevel = priorityLevel;
+  try {
+    return eventHandler();
+  } finally {
+    currentPriorityLevel = previousPriorityLevel;
+  }
+
+unstable_getCurrentPriorityLevel()
+  return currentPriorityLevel;
+
+
