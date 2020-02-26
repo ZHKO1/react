@@ -6,17 +6,17 @@
  *
  * @flow
  */
-
-// UpdateQueue is a linked list of prioritized updates.
+// ! @ZHKO1
+// UpdateQueue is a linked list of prioritized(优先级) updates.
 //
 // Like fibers, update queues come in pairs: a current queue, which represents
 // the visible state of the screen, and a work-in-progress queue, which can be
-// mutated and processed asynchronously before it is committed — a form of
-// double buffering. If a work-in-progress render is discarded before finishing,
+// mutated and processed asynchronously(异步) before it is committed — a form of
+// double buffering. If a work-in-progress render is discarded(丢弃) before finishing,
 // we create a new work-in-progress by cloning the current queue.
 //
-// Both queues share a persistent, singly-linked list structure. To schedule an
-// update, we append it to the end of both queues. Each queue maintains a
+// Both queues share a persistent(持久的), singly-linked list structure. To schedule an
+// update, we append it to the end of both queues. Each queue maintains(维持) a
 // pointer to first update in the persistent list that hasn't been processed.
 // The work-in-progress pointer always has a position equal to or greater than
 // the current queue, since we always work on that one. The current queue's
@@ -31,7 +31,7 @@
 //                                          The work-in-progress queue has
 //                                          processed more updates than current.
 //
-// The reason we append to both queues is because otherwise we might drop
+// The reason we append to both queues is because otherwise we might drop(放弃)
 // updates without ever processing them. For example, if we only add updates to
 // the work-in-progress queue, some updates could be lost whenever a work-in
 // -progress render restarts by cloning from current. Similarly, if we only add
@@ -45,16 +45,16 @@
 // Prioritization
 // --------------
 //
-// Updates are not sorted by priority, but by insertion; new updates are always
+// Updates are not sorted by priority, but by insertion(插入顺序); new updates are always
 // appended to the end of the list.
 //
 // The priority is still important, though. When processing the update queue
 // during the render phase, only the updates with sufficient priority are
 // included in the result. If we skip an update because it has insufficient
 // priority, it remains in the queue to be processed later, during a lower
-// priority render. Crucially, all updates subsequent to a skipped update also
-// remain in the queue *regardless of their priority*. That means high priority
-// updates are sometimes processed twice, at two separate priorities. We also
+// priority render. Crucially(至关重要的是), all updates subsequent(随后) to a skipped update also
+// remain in the queue *regardless(不管) of their priority*. That means high priority
+// updates are sometimes processed twice, at two separate(独立) priorities. We also
 // keep track of a base state, that represents the state before the first
 // update in the queue is applied.
 //
@@ -64,7 +64,7 @@
 //
 //     A1 - B2 - C1 - D2
 //
-//   where the number indicates the priority, and the update is applied to the
+//   where the number indicates(表示) the priority, and the update is applied to the
 //   previous state by appending a letter, React will process these updates as
 //   two separate renders, one per distinct priority level:
 //
