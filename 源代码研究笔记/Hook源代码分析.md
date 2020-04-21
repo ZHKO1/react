@@ -36,7 +36,7 @@ mountState(initialState)
         memoizedState: null,  // 目前值
         baseState: null,      // 初始值
         queue: null,          // 队列
-        baseUpdate: null,     // 
+        baseUpdate: null,     
         next: null,
       };
       if (workInProgressHook === null) {
@@ -62,8 +62,29 @@ dispatchAction(fiber, queue, action)
   const alternate = fiber.alternate;
   if ( fiber === currentlyRenderingFiber || (alternate !== null && alternate === currentlyRenderingFiber)){
     // 看上去可能是父节点更新导致此节点
+    //TODO 纯属猜测，先跳过暂且不看
   }else{
-
+    重新计算出expirationTime
+    const update = {
+      expirationTime,
+      suspenseConfig,
+      action,
+      eagerReducer: null,
+      eagerState: null,
+      next: null,
+    };
+    const last = queue.last;
+    将update给添加到queue的末尾，看起来queue本身就是一个圆环链表，只是queue.last指向尾端 //TODO 我还是不明白这里搞圆环的意义何在
+    if (fiber.expirationTime === NoWork && (alternate === null || alternate.expirationTime === NoWork)) {
+      // 猜测这里是作者想判断节点是否进入render phase状态
+      // 总之会对比state 和 更改后的state
+      const lastRenderedReducer = queue.lastRenderedReducer;
+      const currentState = queue.lastRenderedState;
+      const eagerState = lastRenderedReducer(currentState, action);
+      update的eagerReducer 和 eagerState也同步下
+      is(eagerState, currentState)直接return
+    }
+    scheduleWork(fiber, expirationTime);
   }
 
 
@@ -71,5 +92,6 @@ dispatchAction(fiber, queue, action)
 
 
 
-
-
+https://www.jianshu.com/p/0e7c195d6b7d
+https://copyfuture.com/blogs-details/202001201553149693zwp1d737suwaea
+https://www.xingmal.com/article/article/1239165188612165632
