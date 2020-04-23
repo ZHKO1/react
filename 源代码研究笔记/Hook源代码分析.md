@@ -24,6 +24,28 @@ renderWithHooks(current, workInProgress, Component, props, refOrContext, nextRen
         ? HooksDispatcherOnMount // 初始化加载专用
         : HooksDispatcherOnUpdate; // 更新时专用
   let children = Component(props, refOrContext); // 此时可能用到hook的useState
+  ReactCurrentDispatcher.current = ContextOnlyDispatcher;
+  const renderedWork: Fiber = (currentlyRenderingFiber: any);
+  renderedWork.memoizedState = firstWorkInProgressHook;
+  renderedWork.expirationTime = remainingExpirationTime;
+  renderedWork.updateQueue = (componentUpdateQueue: any);
+  renderedWork.effectTag |= sideEffectTag;
+  const didRenderTooFewHooks =
+  currentHook !== null && currentHook.next !== null;
+  renderExpirationTime = NoWork;
+  currentlyRenderingFiber = null;
+  currentHook = null;
+  nextCurrentHook = null;
+  firstWorkInProgressHook = null;
+  workInProgressHook = null;
+  nextWorkInProgressHook = null;
+  remainingExpirationTime = NoWork;
+  componentUpdateQueue = null;
+  sideEffectTag = 0;
+
+
+
+  
 
 HooksDispatcherOnMount{
   useState: mountState
@@ -95,3 +117,5 @@ dispatchAction(fiber, queue, action)
 https://www.jianshu.com/p/0e7c195d6b7d
 https://copyfuture.com/blogs-details/202001201553149693zwp1d737suwaea
 https://www.xingmal.com/article/article/1239165188612165632
+https://codertw.com/%E7%A8%8B%E5%BC%8F%E8%AA%9E%E8%A8%80/712641/
+
