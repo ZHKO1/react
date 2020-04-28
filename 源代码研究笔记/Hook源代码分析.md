@@ -183,6 +183,15 @@ updateReducer(reducer, initialArg, init)
 
 
 
+这里给出一个连续几次setState hook.queue.last的变化，方便加深理解
+一开始 queue.last = null
+第1次点击 新建了个update queue.last = update; update.next = update;
+        -> renderWithHooks -> hook.baseUpdate = update
+第2次点击 新建了个update1 queue依然还是单圈链的形式 queue.last = update1; update1.next = update; update.next = update1;
+        -> renderWithHooks -> 这里看作者的意思是会直接让queue.last = null; 此时不再是单圈链的形式; 执行完后hook.baseUpdate = update1
+第3次点击 新建了个update2 从这里开始基本只是queue.last.next = update2; queue.last = update2; 依然不是单圈链的形式;
+        -> renderWithHooks 执行完后 hook.baseUpdate = update2
+
 https://www.jianshu.com/p/0e7c195d6b7d
 https://copyfuture.com/blogs-details/202001201553149693zwp1d737suwaea
 https://www.xingmal.com/article/article/1239165188612165632
