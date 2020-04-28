@@ -11,9 +11,19 @@ let componentUpdateQueue: FunctionComponentUpdateQueue | null = null;
 let sideEffectTag: SideEffectTag = 0;
 
 
-首先先看看初始加载的函数栈
-beginWork -> mountIndeterminateComponent
--> value = renderWithHooks(null, workInProgress, Component, props, context, renderExpirationTime,);
+这里我们需要确认下流程，以单个useState为例
+--初始加载
+scheduleWork -> performSyncWorkOnRoot -> workLoopSync -> performUnitOfWork -> beginWork -> mountIndeterminateComponent
+-> value = renderWithHooks(null, workInProgress, Component, props, context, renderExpirationTime,)
+-> 此时 useState 对应 mountState 返回[initState, dispatchAction]
+
+--用户触发setState
+dispatchAction 新增update到Fiber下memorizedState对应Hook的queue里
+-> scheduleWork(fiber, expirationTime) -> performSyncWorkOnRoot -> workLoopSync -> performUnitOfWork -> beginWork -> updateFunctionComponent
+-> value = renderWithHooks(null, workInProgress, Component, props, context, renderExpirationTime,)
+-> 此时 useState 对应 updateState 返回[initState, dispatchAction]
+
+
 
 renderWithHooks(current, workInProgress, Component, props, refOrContext, nextRenderExpirationTime,)
   renderExpirationTime = nextRenderExpirationTime;
@@ -43,12 +53,14 @@ renderWithHooks(current, workInProgress, Component, props, refOrContext, nextRen
   componentUpdateQueue = null;
   sideEffectTag = 0;
 
-
-
-  
-
+//第一次渲染
 HooksDispatcherOnMount{
   useState: mountState
+}
+
+//后续更新
+HooksDispatcherOnUpdate{
+  useState: updateState
 }
 
 mountState(initialState)
@@ -110,7 +122,64 @@ dispatchAction(fiber, queue, action)
   }
 
 
+updateState(initialState,)
+  return updateReducer(basicStateReducer, initialState);
 
+updateReducer(reducer, initialArg, init)
+  const hook = updateWorkInProgressHook();
+    -> updateWorkInProgressHook()
+      大致是从nextCurrentHook复制出一个新的hook，可能会有特殊例子，后续再看看
+  const queue = hook.queue;
+  queue.lastRenderedReducer = reducer;
+  const last = queue.last;
+  const baseUpdate = hook.baseUpdate;
+  const baseState = hook.baseState;
+  let first;
+  if (baseUpdate !== null) {
+    // TODO 看着像是第二次触发setState才会进入的支线
+    if (last !== null) {
+      last.next = null;
+    }
+    first = baseUpdate.next;
+  } else {
+    first = last !== null ? last.next : null;
+  }
+  if (first !== null) {
+    let newState = baseState;
+    let newBaseState = null;
+    let newBaseUpdate = null;
+    let prevUpdate = baseUpdate;
+    let update = first;
+    let didSkip = false;
+    do {
+      const updateExpirationTime = update.expirationTime;
+      if (updateExpirationTime < renderExpirationTime) {
+        // TODO expirationTime越小，优先级则越低，所以此时还没到处理的时候
+      } else {
+        if (update.eagerReducer === reducer) {
+          newState = update.eagerState;
+        } else {
+          const action = update.action;
+          newState = reducer(newState, action);
+        }
+      }
+      prevUpdate = update;
+      update = update.next;
+    } while (update !== null && update !== first);
+    if (!didSkip) {
+      newBaseUpdate = prevUpdate;
+      newBaseState = newState;
+    }
+    if (!is(newState, hook.memoizedState)) {
+      markWorkInProgressReceivedUpdate();
+    }
+    hook.memoizedState = newState;
+    hook.baseUpdate = newBaseUpdate;
+    hook.baseState = newBaseState;
+    queue.lastRenderedState = newState;
+  }
+  const dispatch = queue.dispatch;
+  return [hook.memoizedState, dispatch];
 
 
 
