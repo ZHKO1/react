@@ -102,6 +102,7 @@
   },
   "scripts": {
     "build": "node ./scripts/rollup/build.js",
+    "build_zhko1": "yarn build react/index,react-dom/index,scheduler --type=NODE",
     "build-for-devtools": "cross-env RELEASE_CHANNEL=experimental yarn build react/index,react-dom,react-is,react-debug-tools,scheduler,react-test-renderer --type=NODE",
     "linc": "node ./scripts/tasks/linc.js",
     "lint": "node ./scripts/tasks/eslint.js",
