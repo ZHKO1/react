@@ -1,3 +1,5 @@
+文章来源 https://react.iamkasong.com/
+
 理念篇
 第一章 React理念
 1. React理念
@@ -68,6 +70,13 @@ A: useLayoutEffect是同步调用，因此调用时，浏览器还未完成布�
 3). 根据effectTag分别处理，其中effectTag包括(Placement | Update | Deletion | Hydrating)
 这里值得一提的是Update里也涉及到了useLayoutEffect的销毁函数，而且也是同步调用
 当然也会处理fiber节点的updateQueue(请参见render阶段)
+Q: 送佛送到西，那么源代码里到底是怎么区分useEffect和useLayoutEffect呢？
+A: 首先useEffect和useLayoutEffect都会给fiber节点的effectTag属性赋值(前者是UpdateEffect | PassiveEffect，后者是UpdateEffect)
+其次将创建个effect对象，保存相关参数，存放在fiber节点的updateQueue(前者effect对象的tag属性HookHasEffect | HookPassive, 后者HookHasEffect | HookLayout)
+基于如上区别，就可以在流程中区别了
+commitBeforeMutationEffects函数里，所有functionComponent根据effectTag是否带Passive来判断是否要执行异步调度flushPassiveEffects 对应useEffect
+commitMutationEffects函数里，effectTag是否带Update，都进入commitWork函数内，如果是functionComponent，则进入commitHookEffectListUnmount，检查fiber的updateQueue，根据effect.tag & (HookLayout | HookHasEffect) 来执行useLayoutEffect的销毁操作 对应 useLayoutEffect的销毁
+commitLayoutEffects函数里,根据effectTag & (Update | Callback)的条件，来判定是否进入commitLayoutEffectOnFiber->commitHookEffectListMount 对应 useLayoutEffect的销毁
 4. layout阶段
 
 实现篇
