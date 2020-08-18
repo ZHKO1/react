@@ -38,11 +38,36 @@ render与commit阶段统称为work，即React在工作中。相对应的，如�
 1. 流程概览
 2. beginWork
 3. completeWork
+这里在update时，在updateHostComponent内部，被处理完的props会被赋值给workInProgress.updateQueue，并最终会在commit阶段被渲染在页面上。updatePayload为数组形式，他的奇数索引的值为变化的prop key，偶数索引的值为变化的prop value
 
 第四章 commit阶段
 1. 流程概览
+作者在这里先 简单介绍 “before mutation阶段”之前 和 “layout阶段”之后的额外工作
+这里涉及到了useLayoutEffect和useEffect的区别
+参考资料https://www.cnblogs.com/iheyunfei/p/13065047.html
 2. before mutation阶段
+在这阶段主要做的事情
+1). 处理DOM节点渲染/删除后的 autoFocus、blur 逻辑。
+2). 调用getSnapshotBeforeUpdate生命周期钩子。
+3). 调度useEffect。
+Q: 为什么从v16开始，componentWillXXX钩子前增加了UNSAFE_前缀？
+A: Stack Reconciler重构为Fiber Reconciler后，render阶段的任务可能中断/重新开始，对应的组件在render阶段的生命周期钩子（即componentWillXXX）可能触发多次。为此React提供了替代的生命周期钩子getSnapshotBeforeUpdate。按照作者的的说法，getSnapshotBeforeUpdate是在commit阶段内的before mutation阶段调用的，由于commit阶段是同步的，所以不会遇到多次调用的问题
+Q: useEffect是如何调度的？
+A: 通过scheduleCallback来异步调度。分为三步如下走
+1). before mutation阶段在scheduleCallback中调度flushPassiveEffects
+2). layout阶段之后将effectList赋值给rootWithPendingPassiveEffects
+3). scheduleCallback触发flushPassiveEffects，flushPassiveEffects内部遍历rootWithPendingPassiveEffects
+Q: 为什么useEffect要异步调用？
+A: 能让浏览器先完成布局与绘制，这样就适用于许多常见的副作用场景，比如设置订阅和事件处理等情况，因此不应在函数中执行阻塞浏览器更新屏幕的操作。
+Q: useLayoutEffect又是怎么处理的呢？
+A: useLayoutEffect是同步调用，因此调用时，浏览器还未完成布局与绘制。也正是如此，表现与componentDidMount，componentDidUpdate一致，都会堵塞浏览器渲染
 3. mutation阶段
+在这阶段主要做的事情
+1). 根据ContentReset effectTag重置文字节点
+2). 更新ref
+3). 根据effectTag分别处理，其中effectTag包括(Placement | Update | Deletion | Hydrating)
+这里值得一提的是Update里也涉及到了useLayoutEffect的销毁函数，而且也是同步调用
+当然也会处理fiber节点的updateQueue(请参见render阶段)
 4. layout阶段
 
 实现篇
