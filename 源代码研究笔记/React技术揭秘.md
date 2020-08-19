@@ -78,12 +78,43 @@ commitBeforeMutationEffects函数里，所有functionComponent根据effectTag是
 commitMutationEffects函数里，effectTag是否带Update，都进入commitWork函数内，如果是functionComponent，则进入commitHookEffectListUnmount，检查fiber的updateQueue，根据effect.tag & (HookLayout | HookHasEffect) 来执行useLayoutEffect的销毁操作 对应 useLayoutEffect的销毁
 commitLayoutEffects函数里,根据effectTag & (Update | Callback)的条件，来判定是否进入commitLayoutEffectOnFiber->commitHookEffectListMount 对应 useLayoutEffect的销毁
 4. layout阶段
+在这阶段主要做的事情
+1). commitLayoutEffectOnFiber（调用生命周期钩子和 hook）
+2). commitAttachRef（赋值 ref）
 
 实现篇
 第五章 Diff算法
 1. 概览
+为了降低算法复杂度，React的diff会预设三个限制
+1). 只对同级元素进行Diff。如果一个DOM节点在前后两次更新中跨越了层级，那么React不会尝试复用它。
+2). 两个不同类型的元素会产生出不同的树。比如元素由div变为p，React会销毁div及其子孙节点，并新建p及其子孙节点。
+3). 开发者可以通过 key prop来暗示哪些子元素在不同的渲染下能保持稳定
 2. 单节点Diff
+具体逻辑在reconcileSingleElement里
+根据我的理解，workInProgress父Fiber下如果只有一个child（换句话也就是children只有一个），那么diff算法就走单节点Diff逻辑
+此时，current树里能对应的fiber要么没有，要么一个到多个
+没有的话，很显然，只能新生成一个Fiber并返回
+一个到多个的话，会逐个判断key是否相同，再判断type是否相同，都相同时才能复用
+这里可以注意到，如果key相同，但是type不相同，也无需往下判断了，因为唯一的可能性都不行，更别说其他的了
 3. 多节点Diff
+具体逻辑在reconcileChildrenArray函数里
+多节点Diff的目的是需要在保留共同基础上确定会有哪些diff
+所以我们首先需要确定多节点Diff的场景，一般有三种情况
+情况1：节点更新 （节点属性变化 节点类型更新）
+情况2：节点新增或减少 （新增节点 减少节点）
+情况3：节点位置变化 （位置上移 下移）
+这里React团队给出的解决方案是整体逻辑会经历两轮遍历。第一轮遍历处理更新的节点，第二轮遍历处理剩下不属于更新的节点
+1). 第一轮遍历处理更新的节点是因为React团队研究发现，日常开发，更新发生的频率更高，因此会优先判断当前节点是否属于更新
+细节1: 更准确得说是也涵盖了关于能否重用的判断逻辑
+细节2: 判定逻辑详见函数updateSlot( returnFiber, oldFiber, newChild, lanes,)
+这里会对比(旧fiber 和 新jsx生成对象)key是否一致，如果一致，会考虑是重用老fiber还是新建Fiber(修改)，不一致的话，此轮遍历就到此结束
+细节3: 这里react团队还会检测oldFiber.index > newIdx(newFiber的index)，按照react技术揭秘同一作者的react-on-the-way里同一段的注释，这里考虑到的是oldFiber的前一个兄弟fiber为null的场景，比如[null, a]
+细节4: 如果满足oldFiber && newFiber.alternate === null，则执行deleteChild(returnFiber, oldFiber)
+显然只有修改的情况下，才会执行。值得一提的是，deleteChild函数里还额外将老fiber标上Deletion，挂载于returnFiber的effect list上。这是因为returnFiber下只有重用或者新增的fiber，没有删除的fiber，需要手动处理。当然其他effectTag就会在后面统一从叶到根收集上去
+细节5: lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+第一轮遍历这里基本只是记录lastPlacedIndex，表明目前第一轮遍历遍历到哪了。
+2). 第二轮遍历处理更新的节点是因为React团队研究发现，日常开发，更新发生的频率更高，因此会优先判断当前节点是否属于更新
+
 
 第六章 状态更新
 1. 流程概览
