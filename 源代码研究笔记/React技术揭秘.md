@@ -110,10 +110,19 @@ commitLayoutEffects函数里,根据effectTag & (Update | Callback)的条件，�
 这里会对比(旧fiber 和 新jsx生成对象)key是否一致，如果一致，会考虑是重用老fiber还是新建Fiber(修改)，不一致的话，此轮遍历就到此结束
 细节3: 这里react团队还会检测oldFiber.index > newIdx(newFiber的index)，按照react技术揭秘同一作者的react-on-the-way里同一段的注释，这里考虑到的是oldFiber的前一个兄弟fiber为null的场景，比如[null, a]
 细节4: 如果满足oldFiber && newFiber.alternate === null，则执行deleteChild(returnFiber, oldFiber)
-显然只有修改的情况下，才会执行。值得一提的是，deleteChild函数里还额外将老fiber标上Deletion，挂载于returnFiber的effect list上。这是因为returnFiber下只有重用或者新增的fiber，没有删除的fiber，需要手动处理。当然其他effectTag就会在后面统一从叶到根收集上去
+显然只有修改的情况下，才会执行。值得一提的是，deleteChild函数里还额外将老fiber标上Deletion，挂载于returnFiber的effect list上。这是因为returnFiber下只有重用或者新增的fiber，没有删除的fiber，需要手动处理。当然其他effectTag就会在后续流程统一从叶到根收集上去
 细节5: lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-第一轮遍历这里基本只是记录lastPlacedIndex，表明目前第一轮遍历遍历到哪了。
-2). 第二轮遍历处理更新的节点是因为React团队研究发现，日常开发，更新发生的频率更高，因此会优先判断当前节点是否属于更新
+这里在第一轮里基本只是记录lastPlacedIndex，表明目前第一轮遍历里目前遍历到的可重用fiber的序号，后续第二轮会用到
+在第一轮结束后，这里还会判断旧节点或新节点是否遍历完。如果满足这两个条件之一，则不再执行第二轮遍历并返回
+旧节点遍历完，新节点没遍历完 说明有新节点，此时遍历剩下的新节点，依次标记Placement
+旧节点没遍历完，新节点遍历完 说明少了节点，此时遍历剩下的旧节点，依次标记Deletion
+2). 第二轮遍历处理剩下不属于更新的节点
+再次明确下第二轮遍历我们要解决的是能解决节点上移或者下移的情况，比如abcd->bcda
+为了解决此问题，react提出来的办法其实很简单暴力的
+核心思路是，逐一循环剩下的新节点，只需要保证对应的旧节点位置能不动就不动，除非旧节点从前面移动到后面，那只能执行Delete再Placement的操作了
+比如abcd(旧)->bcda(新)，可以看到新节点b,c,d，对应旧节点列表的b,c,d，顺序其实都是没变的，所以我们要做的只有将删除a，再添加到末尾
+比如abcd(旧)->dabc(新)，可以看到新节点d，对应旧节点列表的d，保持顺序没变，但剩下的a,b,c都只能逐一删除以及添加到末尾
+具体实现思路，请参见lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx)这一行
 
 
 第六章 状态更新
