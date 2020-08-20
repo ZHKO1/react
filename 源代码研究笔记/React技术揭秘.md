@@ -127,8 +127,41 @@ commitLayoutEffects函数里,根据effectTag & (Update | Callback)的条件，�
 
 第六章 状态更新
 1. 流程概览
+状态更新的整个调用路径的关键节点
+触发状态更新（根据场景调用不同方法）-> 创建Update对象-> 从fiber到root（`markUpdateLaneFromFiberToRoot`）-> 调度更新（`ensureRootIsScheduled`）-> render阶段（`performSyncWorkOnRoot` 或 `performConcurrentWorkOnRoot`）-> commit阶段（`commitRoot`）
 2. 心智模型
+按照作者的意思，在React中，所有通过ReactDOM.render创建的应用都是同步更新状态，没有优先级概念
+通过ReactDOM.createBlockingRoot和ReactDOM.createRoot创建的应用会采用并发的方式更新状态，优先完成高优更新
 3. Update
+首先我们可以通过如下方式来触发更新
+ReactDOM.render —— HostRoot
+this.setState —— ClassComponent
+this.forceUpdate —— ClassComponent
+useState —— FunctionComponent
+useReducer —— FunctionComponent
+其中ClassComponent与HostRoot共用一套Update结构，FunctionComponent单独使用一种Update结构
+1). update的结构如下
+eventTime, // 任务时间，通过performance.now()获取的毫秒数
+lane, // 优先级相关
+suspenseConfig, // suspense相关
+tag: UpdateState, // 更新的类型，包括UpdateState | ReplaceState | ForceUpdate | CaptureUpdate
+payload: null, // 更新挂载的数据，不同类型组件挂载的数据不同。对于ClassComponent，payload为this.setState的第一个传参。对于HostRoot，payload为ReactDOM.render的第一个传参
+callback: null, // 更新的回调函数，根据作者说法会在commit阶段的layout阶段下调用。TODO：后续有时间研究下具体是怎么调用的
+next: null, // 与其他Update连接形成链表
+2). Fiber节点上的多个Update会组成链表并被包含在fiber.updateQueue中
+updateQueue有三种类型，其中针对HostComponent的请参见completeWork一节
+ClassComponent与HostRoot使用的UpdateQueue结构如下
+baseState: fiber.memoizedState, // 本次更新前该Fiber节点的state，Update基于该state计算更新后的state
+firstBaseUpdate: null, // 本次更新前该Fiber节点已保存的Update，之所以在更新产生前该Fiber节点内就存在Update，是由于某些Update优先级较低所以在上次render阶段由Update计算state时被跳过。
+lastBaseUpdate: null,
+shared: {
+  pending: null, // 触发更新时，产生的Update会保存在shared.pending中形成单向环状链表。当由Update计算state时这个环会被剪开并连接在lastBaseUpdate后面
+},
+effects: null, // 数组。保存update.calback !== null的Update
+
+// TODO 有待研究下 processUpdateQueue函数，按照作者的说法对应的是render阶段的Update操作
+// 同时真的有必要看下ReactUpdateQueue.old.js的开头注释部分
+
 4. 深入理解优先级
 5. ReactDOM.render
 6. this.setState
