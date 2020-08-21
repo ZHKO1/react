@@ -158,11 +158,35 @@ shared: {
   pending: null, // 触发更新时，产生的Update会保存在shared.pending中形成单向环状链表。当由Update计算state时这个环会被剪开并连接在lastBaseUpdate后面
 },
 effects: null, // 数组。保存update.calback !== null的Update
-
-// TODO 有待研究下 processUpdateQueue函数，按照作者的说法对应的是render阶段的Update操作
-// 同时真的有必要看下ReactUpdateQueue.old.js的开头注释部分
-
+3). 关于updateQueue，作者给出了流程如下
+假设有一个fiber刚经历commit阶段完成渲染，该fiber的baseUpdate属性上有两个update（由于优先级过低，在上次render阶段并没有处理），这里假设分别为u1，u2
+fiber.updateQueue.firstBaseUpdate === u1;
+fiber.updateQueue.lastBaseUpdate === u2;
+u1.next === u2;
+现在在fiber上触发两次状态更新，这会产生两个新update，分别为u3 和 u4
+fiber.updateQueue.shared.pending === u3;
+u3.next === u4;
+u4.next === u3;
+更新调度完进入render阶段
+shared.pending的环被剪开并连接在updateQueue.lastBaseUpdate后面
+fiber.updateQueue.baseUpdate: u1 --> u2 --> u3 --> u4
+接下来遍历updateQueue.baseUpdate链表，以fiber.updateQueue.baseState为初始state，依次与遍历到的每个Update计算并产生新的state
+在遍历时如果有优先级低的Update会被跳过
+当遍历完成后获得的state，就是该Fiber节点在本次更新的state
+也正是state的不同，以至于在render阶段产生与上次更新不同的JSX对象，通过Diff算法产生effectTag，在commit阶段渲染在页面上
 4. 深入理解优先级
+这里我们需要参考两部分
+1). ReactUpdateQueue.old.js的开头注释部分(参见ReactUpdateQueue注释大意.md)
+2). ReactUpdateQueue.old.js的processUpdateQueue函数
+可以通过此函数来看看react团队是如何处理跳过某些update的
+细节1：当只要有跳过的update时，包括这个update在内，后续的update都会被复制再拼接在baseupdate之后，显然是要等后续低优先级渲染再执行一遍
+细节1: newState 和 newBaseState看起来相似，其实各有用意
+newState 对应的是 执行所有高优先级update后的state
+newBaseState 对应的是 跳过低优先级update前的state
+前者会作为workInProgress的memoizedState
+后者则保存为queue的baseState，下次渲染还是要基于这个来执行update(参见细节1)，这样就不会担心由于优先级不同，导致结果不同，任你千变万化，最终结果还是根据全都老老实实执行一遍来
+
+
 5. ReactDOM.render
 6. this.setState
 
