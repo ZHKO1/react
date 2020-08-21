@@ -2,7 +2,7 @@
 
 var React = require('react');
 var ReactDOM = require('react-dom');
-var {useState} = React;
+var {useState, useLayoutEffect} = React;
 
 
 function Damn(){
@@ -10,6 +10,11 @@ function Damn(){
   const onChange = ()=>{
     setstate(state + 1);
   }
+  useLayoutEffect(()=>{
+    debugger;
+    document.title = state
+  }, [state])
+
   return (<div><button onClick={onChange}>add</button>{state}</div>)
 }
 ReactDOM.render(<Damn />, document.getElementById('container'));

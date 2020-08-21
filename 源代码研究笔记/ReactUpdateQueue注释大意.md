@@ -1,0 +1,19 @@
+原文参见ReactUpdateQueue.old.js 开头注释部分
+
+UpdateQueue是update的链表
+
+和fiber一样，我们也需要考虑到current fiber的update queue，以及work-in-progress fiber的update queue
+
+两个queue都共享单链表结构。每次调度一次update，我们都把update给新增到双queue的末尾。每个queue都有自己的指针指向还未执行的第一个update。这里work-in-progress queue的指针往往指的是同样update，或者更后面的update。current queue只会在commit阶段更新，也就是与work-in-progress交换的时候
+
+同时添加update到双queue的原因是因为如果不这么做，我们可能会没更新就丢失update。举个例子，如果只添加到work-in-progress, 那么当work-in-progress重新渲染时，是直接复制current queue，导致个别update丢失。类似的，如果只添加到 current queue，当已存在的already-in-progress queue commit和与current交换，也同样会丢失update。所以我们同时添加到双queue末尾，能保证update能成为下一个work-in-progress的部分（而且因为一旦commit，work-in-progress queue也成为current queue，所以是不会执行同样update两遍）
+
+updates 不会根据优先级排序，而是根据插入顺序排序，新的updates总是会添加到链表末尾
+
+当然，优先级还是重要的。当我们在render阶段下处理update queue时，只有满足优先级的update才会被计算归并到结果里。如果我们因为优先级不够而跳过某些update，这些被跳过的update还是会保留在queue里，等待后续轮到低优先级渲染再执行。重要的是，被跳过的update之后的所有updates，无视优先级，全都保存在queue里。这个意味着高优先级update有时候会执行两遍（在两种优先级情况下，各自对应渲染一次），我们还会跟踪base state（在queue的第一个update应用前）
+
+因为我们以插入顺序处理updates，而且跳过之前更新时，重新执行高优先级update，所以最终结果是决定性的，无关优先级。中间状态可能会根据系统而千变万化，但是最终state是一致的
+
+
+
+
