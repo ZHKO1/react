@@ -185,10 +185,21 @@ newState 对应的是 执行所有高优先级update后的state
 newBaseState 对应的是 跳过低优先级update前的state
 前者会作为workInProgress的memoizedState
 后者则保存为queue的baseState，下次渲染还是要基于这个来执行update(参见细节1)，这样就不会担心由于优先级不同，导致结果不同，任你千变万化，最终结果还是根据全都老老实实执行一遍来
-
-
 5. ReactDOM.render
+至此，更新的整个流程都串联起来了
+创建fiberRootNode、rootFiber、updateQueue（`legacyCreateRootFromDOMContainer`）
+创建Update对象（`updateContainer`）
+从fiber到root（`markUpdateLaneFromFiberToRoot`）
+调度更新（`ensureRootIsScheduled`）
+render阶段（`performSyncWorkOnRoot` 或 `performConcurrentWorkOnRoot`）
+commit阶段（`commitRoot`）
+react支持的几个模式
+legacy -- ReactDOM.render(<App />, rootNode)
+blocking -- ReactDOM.createBlockingRoot(rootNode).render(<App />)
+concurrent -- ReactDOM.createRoot(rootNode).render(<App />)
 6. this.setState
+相关代码请参见enqueueSetState，可以看到update的创建和调度
+this.forceUpdate也类似，具体请参见enqueueForceUpdate，区别在于update.tag = ForceUpdate;以及没有payload
 
 第七章 Hooks
 1. Hooks理念
