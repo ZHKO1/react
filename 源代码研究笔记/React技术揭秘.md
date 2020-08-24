@@ -203,6 +203,32 @@ this.forceUpdate也类似，具体请参见enqueueForceUpdate，区别在于upda
 
 第七章 Hooks
 1. Hooks理念
+最佳参考是https://zh-hans.reactjs.org/docs/hooks-intro.html
+相比于ClassComponent，Hooks则更贴近React内部运行的各种概念（state | context | life-cycle）
+而且ClassComponent的生命周期概念与Hooks概念本质上是有所区分，不能简单类比
+总结: Concurrent Mode是React未来的发展方向，而Hooks是能够最大限度发挥Concurrent Mode潜力的Component构建方式
 2. 极简Hooks实现
+请参见demo/example3 是作者给出的例子
 3. Hooks数据结构
+dispatcher
+在真实的Hooks中，组件mount时的hook与update时的hook来源于不同的对象，请参见HooksDispatcherOnMount 和 HooksDispatcherOnUpdate
+细节1: renderWithHooks里执行完let children = Component(props, secondArg)之后，此时ReactCurrentDispatcher.current = ContextOnlyDispatcher;如此一来useEffect(() => {useState(0);})嵌套写法就会报错
+hook数据结构如下
+memoizedState
+baseState
+baseQueue
+queue
+next
+不同类型hook的memoizedState保存不同类型数据，具体如下
+useState：对于const [state, updateState] = useState(initialState)，memoizedState保存state的值
+useReducer：对于const [state, dispatch] = useReducer(reducer, {});，memoizedState保存state的值
+useEffect：memoizedState保存包含useEffect回调函数、依赖项等的链表数据结构effect，effect的创建过程参见pushEffect函数。effect链表同时会保存在fiber.updateQueue中
+useRef：对于useRef(1)，memoizedState保存{current: 1}
+useMemo：对于useMemo(callback, [depA])，memoizedState保存[callback(), depA]
+useCallback：对于useCallback(callback, [depA])，memoizedState保存[callback, depA]。与useMemo的区别是，useCallback保存的是callback函数本身，而useMemo保存的是callback函数的执行结果
+有些hook是没有memoizedState的，比如：
+useContext
 4. useState与useReducer
+5. useEffect
+6. useRef
+7. useMemo与useCallback
