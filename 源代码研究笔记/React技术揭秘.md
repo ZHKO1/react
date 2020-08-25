@@ -214,10 +214,10 @@ dispatcher
 在真实的Hooks中，组件mount时的hook与update时的hook来源于不同的对象，请参见HooksDispatcherOnMount 和 HooksDispatcherOnUpdate
 细节1: renderWithHooks里执行完let children = Component(props, secondArg)之后，此时ReactCurrentDispatcher.current = ContextOnlyDispatcher;如此一来useEffect(() => {useState(0);})嵌套写法就会报错
 hook数据结构如下
-memoizedState
+memoizedState 
 baseState
 baseQueue
-queue
+queue // 以useState为例 里面包含pending，dispatch，lastRenderedReducer，lastRenderedState
 next
 不同类型hook的memoizedState保存不同类型数据，具体如下
 useState：对于const [state, updateState] = useState(initialState)，memoizedState保存state的值
@@ -229,6 +229,47 @@ useCallback：对于useCallback(callback, [depA])，memoizedState保存[callback
 有些hook是没有memoizedState的，比如：
 useContext
 4. useState与useReducer
+作者将工作流程分为 申明阶段 和 调用阶段
+申明阶段对应render阶段时，执行函数组件，会依次执行hook
+调用阶段对应dispatch 或 updateNum 被调用
+我们先按照顺序来看看流程具体是怎么样的
+>>> mount时，useReducer会调用mountReducer，useState会调用mountState
+1). 创建并返回当前的hook 参见 mountWorkInProgressHook
+挂载到当前fiber的memoizedState，通过next属性保持链表结构
+以及保存为全局参数workInProgressHook
+2). 赋值初始state 
+hook.memoizedState = hook.baseState = initialState;
+3). 初始化queue
+const queue = (hook.queue = {
+  pending: null,
+  dispatch: dispatchAction.bind( null, currentlyRenderingFiber, queue),
+  lastRenderedReducer: reducer,
+  lastRenderedState: (initialState: any),
+});
+4). return [hook.memoizedState, dispatch];
+mountReducer 和 useState区别在于后者直接写死reducer为basicStateReducer
+>>> dispatch时 dispatchAction( fiber, queue, action)
+1). 创建update，挂载到queue.pending下，这里是圆环链表结构
+var update = {
+  eventTime: eventTime,
+  lane: lane,
+  suspenseConfig: suspenseConfig,
+  action: action,
+  eagerReducer: null,
+  eagerState: null,
+  next: null
+}; 
+2). 检查是否是render阶段触发的更新
+如果是，则会在后续重新处理下
+如果不是，这里react团队优化了下判断，避免不必要的更新，具体逻辑如下
+if (fiber.lanes === NoLanes && (alternate === null || alternate.lanes === NoLanes))
+按照作者的说法
+fiber.lanes保存fiber上存在的update的优先级
+fiber.lanes === NoLanes意味着fiber上不存在update
+因此可以判断出本次调用是该hook上的第一个update，react团队假设reducer没变化直接根据该update推算出新state。所以如果新state和旧state不一致，那么还是需要进行一次新的调度，此时新state暂存到update.eagerState，在后续好歹也能用得到。如果一致的话，则不进行新的调度。初看感觉没考虑到reducer的变化，但仔细想想还是有道理的，因为就算reducer变化，此时也肯定会重新渲染，到时候还是会用得着这个update
+>>> updateReducer
+
+
 5. useEffect
 6. useRef
 7. useMemo与useCallback
