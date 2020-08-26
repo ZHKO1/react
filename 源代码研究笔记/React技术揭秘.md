@@ -180,7 +180,7 @@ fiber.updateQueue.baseUpdate: u1 --> u2 --> u3 --> u4
 2). ReactUpdateQueue.old.js的processUpdateQueue函数
 可以通过此函数来看看react团队是如何处理跳过某些update的
 细节1：当只要有跳过的update时，包括这个update在内，后续的update都会被复制再拼接在baseupdate之后，显然是要等后续低优先级渲染再执行一遍
-细节1: newState 和 newBaseState看起来相似，其实各有用意
+细节2: newState 和 newBaseState看起来相似，其实各有用意
 newState 对应的是 执行所有高优先级update后的state
 newBaseState 对应的是 跳过低优先级update前的state
 前者会作为workInProgress的memoizedState
@@ -233,7 +233,7 @@ useContext
 申明阶段对应render阶段时，执行函数组件，会依次执行hook
 调用阶段对应dispatch 或 updateNum 被调用
 我们先按照顺序来看看流程具体是怎么样的
->>> mount时，useReducer会调用mountReducer，useState会调用mountState
+**mount时，useReducer会调用mountReducer，useState会调用mountState**
 1). 创建并返回当前的hook 参见 mountWorkInProgressHook
 挂载到当前fiber的memoizedState，通过next属性保持链表结构
 以及保存为全局参数workInProgressHook
@@ -248,7 +248,7 @@ const queue = (hook.queue = {
 });
 4). return [hook.memoizedState, dispatch];
 mountReducer 和 useState区别在于后者直接写死reducer为basicStateReducer
->>> dispatch时 dispatchAction( fiber, queue, action)
+**dispatch时 dispatchAction( fiber, queue, action)**
 1). 创建update，挂载到queue.pending下，这里是圆环链表结构
 var update = {
   eventTime: eventTime,
@@ -267,9 +267,17 @@ if (fiber.lanes === NoLanes && (alternate === null || alternate.lanes === NoLane
 fiber.lanes保存fiber上存在的update的优先级
 fiber.lanes === NoLanes意味着fiber上不存在update
 因此可以判断出本次调用是该hook上的第一个update，react团队假设reducer没变化直接根据该update推算出新state。所以如果新state和旧state不一致，那么还是需要进行一次新的调度，此时新state暂存到update.eagerState，在后续好歹也能用得到。如果一致的话，则不进行新的调度。初看感觉没考虑到reducer的变化，但仔细想想还是有道理的，因为就算reducer变化，此时也肯定会重新渲染，到时候还是会用得着这个update
->>> updateReducer
-
-
+**updateReducer( reducer, initialArg, init )**
+1). 获取当前workInProgressHook 通过updateWorkInProgressHook函数
+先检查currentHook是否存在，如果不存在，基本上是update时执行到的第一个hook，此时currentHook只需要赋值为current.memoizedState就可以了
+同理，检查workInProgressHook是否存在，如果不存在，也基本上是对应update时执行到的第一个hook，同样赋值为currentlyRenderingFiber.memoizedState;
+当然currentlyRenderingFiber.memoizedState也未必就能有值，此时还是需要从current hook复制过来
+反之，如果currentHook存在，那么currentHook对应的是update时执行的上一个hook，workInProgressHook同理
+2). queue.lastRenderedReducer = reducer; // queue对应上一步获取到的hook.queue。同时这里也能看到每次执行useReducer，是会重新赋值reducer的
+3). 后续执行update流程与processUpdateQueue类似。
+细节1: 这里react团队尝试应用dispatch的优化路径
+如果update.eagerReducer === reducer，应用update.eagerState赋值到reducer
+否则逐一老老实实得执行const action = update.action;newState = reducer(newState, action);
 5. useEffect
 6. useRef
 7. useMemo与useCallback
