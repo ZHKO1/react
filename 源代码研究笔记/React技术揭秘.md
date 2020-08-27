@@ -275,9 +275,25 @@ fiber.lanes === NoLanes意味着fiber上不存在update
 反之，如果currentHook存在，那么currentHook对应的是update时执行的上一个hook，workInProgressHook同理
 2). queue.lastRenderedReducer = reducer; // queue对应上一步获取到的hook.queue。同时这里也能看到每次执行useReducer，是会重新赋值reducer的
 3). 后续执行update流程与processUpdateQueue类似。
-细节1: 这里react团队尝试应用dispatch的优化路径
+细节1: 这里react团队尝试应用dispatch的优化路径，对应dispatch阶段时的 update.eagerState 和 update.eagerReducer
 如果update.eagerReducer === reducer，应用update.eagerState赋值到reducer
 否则逐一老老实实得执行const action = update.action;newState = reducer(newState, action);
 5. useEffect
+之前在第四章 commit阶段 2. before mutation阶段 里作者提到过
+1). before mutation阶段在scheduleCallback中调度flushPassiveEffects
+2). layout阶段之后将effectList赋值给rootWithPendingPassiveEffects
+3). scheduleCallback触发flushPassiveEffects，flushPassiveEffects内部遍历rootWithPendingPassiveEffects
+这里我们再谈谈具体细节
+细节1: render阶段的mount情况下，currentlyRenderingFiber.effectTag |= fiberEffectTag; 同时 hook.memoizedState 内保存 一个effect对象(由pushEffect函数返回)，这里effect对象的tag指定为HookHasEffect | HookPassive
+细节2：pushEffect函数主要是返回一个effect对象(tag,create,destroy,deps,next)，同时也保存在currentlyRenderingFiber.updateQueue.lastEffect上(其实updateQueue下也就只有lastEffect字段，而且是圆环链表结构)。
+细节3： render阶段的update情况下，其实和细节1没太大区别，唯一区别是多了检查deps是否一致这步骤，如果一致，effect对象的tag指定为HookPassive，少了HookHasEffect，如果不一致，后续跟mount情况一致
+细节4：layout阶段是如何收集符合条件的effect供flushPassiveEffects统一处理呢？答案是commitLayoutEffectOnFiber方法内部的schedulePassiveEffects函数
+细节5：useEffect的执行需要保证所有组件useEffect的销毁函数必须都执行完后才能执行任意一个组件的useEffect的回调函数。否则在多个组件间可能共用同一个ref场景下，可能会混乱。
+
+
+
+//TODO render阶段的update情况下，当deps一致的情况下，还需要生成一个effect对象挂载在fiber.updateQueue.lastEffect上吗？之后updateQueue.lastEffect又是否会清空？
+
+
 6. useRef
 7. useMemo与useCallback
