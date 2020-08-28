@@ -285,15 +285,29 @@ fiber.lanes === NoLanes意味着fiber上不存在update
 3). scheduleCallback触发flushPassiveEffects，flushPassiveEffects内部遍历rootWithPendingPassiveEffects
 这里我们再谈谈具体细节
 细节1: render阶段的mount情况下，currentlyRenderingFiber.effectTag |= fiberEffectTag; 同时 hook.memoizedState 内保存 一个effect对象(由pushEffect函数返回)，这里effect对象的tag指定为HookHasEffect | HookPassive
-细节2：pushEffect函数主要是返回一个effect对象(tag,create,destroy,deps,next)，同时也保存在currentlyRenderingFiber.updateQueue.lastEffect上(其实updateQueue下也就只有lastEffect字段，而且是圆环链表结构)。
+细节2：pushEffect函数主要是返回一个effect对象(tag,create,destroy,deps,next)，同时也保存在currentlyRenderingFiber.updateQueue.lastEffect上(其实updateQueue下也就只有lastEffect字段，而且是圆环链表结构)。注: 这里每次renderWithHooks，都事先会把updateQueue给清空，因此不会发生上次的effect对象保留到workInProgress
 细节3： render阶段的update情况下，其实和细节1没太大区别，唯一区别是多了检查deps是否一致这步骤，如果一致，effect对象的tag指定为HookPassive，少了HookHasEffect，如果不一致，后续跟mount情况一致
 细节4：layout阶段是如何收集符合条件的effect供flushPassiveEffects统一处理呢？答案是commitLayoutEffectOnFiber方法内部的schedulePassiveEffects函数
-细节5：useEffect的执行需要保证所有组件useEffect的销毁函数必须都执行完后才能执行任意一个组件的useEffect的回调函数。否则在多个组件间可能共用同一个ref场景下，可能会混乱。
-
-
-
-//TODO render阶段的update情况下，当deps一致的情况下，还需要生成一个effect对象挂载在fiber.updateQueue.lastEffect上吗？之后updateQueue.lastEffect又是否会清空？
-
-
+细节5：useEffect的执行需要保证所有组件useEffect的销毁函数必须都执行完后才能执行任意一个组件的useEffect的回调函数。否则在多个组件间可能共用同一个ref场景下，可能会混乱。这里共用同一个ref，应该就只是单纯用ref的对象而已，并不是class组件意义上的ref。具体请参见demo/example2
 6. useRef
+这个hook的出现让我们可以把任何需要被引用的数据都保存在ref中
+对于mount与update，useRef对应两个不同dispatcher，分别是mountRef 和 updateRef。代码很简单，前者单纯把ref({current: initialValue})保存到hook.memoizedState，后者读取hook.memoizedState
+ref被挂载在DOM上的工作流程如下: 
+1). render阶段为含有ref属性的fiber添加Ref effectTag
+  beginWork中 updateClassComponent内的finishClassComponent，对应ClassComponent
+  beginWork中 updateHostComponent，对应HostComponent
+  completeWork中 HostComponent类型 和 ScopeComponent类型
+  总得来说
+  对于mount，workInProgress.ref !== null，即存在ref属性
+  对于update，current.ref !== workInProgress.ref，即ref属性改变
+2). commit阶段为包含Ref effectTag的fiber执行对应操作
+  commit阶段 的 mutation阶段 先判断effectTag是否有Ref，如果有就清空ref  参见commitMutationEffects的commitDetachRef函数
+  commit阶段 的 mutation阶段 Delete操作，也会递归子节点，逐一清空ref，参见commitDeletion->unmountHostComponents->commitUnmount
+  commit阶段 的 layout阶段 会执行commitAttachRef(赋值ref) 参见commitLayoutEffects->commitAttachRef
+题外话 我们来看看forwardRef是如何实现的
+  首先React.forwardRef返回的是一个对象({$$typeof: REACT_FORWARD_REF_TYPE,render,})，JSX自会处理
+  beginwork阶段里执行updateForwardRef函数，值得一提的是updateForwardRef内会传递ref给renderWithHooks，里面let children = Component(props, secondArg) secondArg正是ref
+  大致上应该就这样了，有点类似于语法糖
 7. useMemo与useCallback
+
+
